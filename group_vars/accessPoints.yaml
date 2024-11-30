@@ -1,0 +1,68 @@
+device_2g_radio: "{{ (ansible_facts.openwrt_wireless | dict2items | selectattr('value.config.band', 'equalto', '2g') | map(attribute='key') | first) | default('none') }}"
+device_5g_radio: "{{ (ansible_facts.openwrt_wireless | dict2items | selectattr('value.config.band', 'equalto', '5g') | map(attribute='key') | first) | default('none') }}"
+
+network_devices:
+  - name: "br-vlan129"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}.129"]
+  - name: "br-vlan137"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}.137"]
+  - name: "br-vlan145"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}.145"]
+  - name: "br-free"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}.152"]
+
+network_interfaces:
+  - id: "mgmnt"
+    proto: "static"
+    device: "{{ device_bridge_port }}.99"
+    ipaddr: "{{ device_ip_address }}/24"
+    gateway: "{{ device_ip_address | regex_replace('\\.[0-9]+$', '.1') }}"
+    dns: ["{{ device_ip_address | regex_replace('\\.[0-9]+$', '.1') }}"]
+  - id: "hoste_wifi"
+    proto: "none"
+    device: "br-vlan129"
+  - id: "studenti_wifi"
+    proto: "none"
+    device: "br-vlan137"
+  - id: "ucitele_wifi"
+    proto: "none"
+    device: "br-vlan145"
+  - id: "free_wifi"
+    proto: "none"
+    device: "br-free"
+
+wireless_devices_default:
+  disabled: 0
+  country: CZ
+
+wireless_interfaces:
+  - ssid: "eduroam"
+    mode: "ap"
+    ifname: "eduroam"
+    network: ["hoste_wifi"]
+    encryption: "wpa2+ccmp"
+    auth_server: "10.11.99.99"
+    auth_secret: "Jednokolka123"
+    dynamic_vlan: "2"
+    vlan_tagged_interface: "{{ ansible_facts.openwrt_interfaces.mgmnt.device | regex_search('eth[0-9]+|wan') }}"
+    vlan_bridge: "br-vlan"
+    vlan_naming: "1"
+    isolate: "1"
+    ieee80211r: "1"
+    ft_over_ds: "0"
+    device: "{{ ansible_facts.openwrt_wireless | list }}"
+  - ssid: "free wifi"
+    mode: "ap"
+    ifname: "free"
+    network: ["free_wifi"]
+    encryption: "none"
+    isolate: "1"
+    device: "{{ ansible_facts.openwrt_wireless | list }}"

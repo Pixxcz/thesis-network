@@ -1,0 +1,13 @@
+- hosts: accessPoints
+  ignore_unreachable: true
+  gather_facts: false
+  vars:
+    openwrt_install_recommended_packages: no
+  roles:
+  - gekmihesg.openwrt
+
+  tasks:
+  - name: Reboot devices
+    ansible.builtin.command:
+      cmd: "reboot"
+    changed_when: false

@@ -1,0 +1,28 @@
+---
+- name: Nastaveni state swconfig {{ item.vlan }}
+  ansible.builtin.set_fact:
+    switch_vlan_state: "{{ item.state | default('present') }}"
+
+- name: Odstraneni vlany {{ item.vlan }}
+  when: "'absent' in switch_vlan_state"
+  uci:
+    command: "absent"
+    config: "network"
+    type: "switch_vlan"
+    find:
+      vlan: "{{ item.vlan | mandatory }}"
+
+- name: Pridani a konfigurace vlany
+  when: "'present' in switch_vlan_state"
+  uci:
+    command: "section"
+    config: "network"
+    type: "switch_vlan"
+    find:
+      vlan: "{{ item.vlan | mandatory }}"
+    value:
+      device: "{{ item.device | default('switch0') }}"
+      vid: "{{ item.vid | default(item.vlan | default(omit)) }}"
+      ports: "{{ item.ports | default([]) }}"
+      description: "{{ item.description | default(omit) }}"
+    replace: "yes"

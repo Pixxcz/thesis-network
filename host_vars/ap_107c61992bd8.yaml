@@ -1,0 +1,40 @@
+device_ip_address: "10.11.99.2"
+device_hostname: "ap-chodba-134"
+
+network_devices_append:
+  - name: "br0"
+    state: "present"
+    type: "bridge"
+    ports: ["wan", "lan1", "lan2", "lan3"]
+network_bridge_vlan_filtering:
+  - vlan: "99"
+    device: "{{ device_bridge_port }}"
+    ports: ["wan:t"]
+  - vlan: "128"
+    device: "{{ device_bridge_port }}"
+    ports: ["wan:t", "lan1", "lan2:t"]
+  - vlan: "129"
+    device: "{{ device_bridge_port }}"
+    ports: ["wan:t", "lan2:t"]
+  - vlan: "137"
+    device: "{{ device_bridge_port }}"
+    ports: ["wan:t", "lan2:t"]
+  - vlan: "145"
+    device: "{{ device_bridge_port }}"
+    ports: ["wan:t", "lan2:t"]
+  - vlan: "152"
+    device: "{{ device_bridge_port }}"
+    ports: ["wan:t", "lan2:t"]
+
+wireless_devices:
+  - id: "{{ device_2g_radio }}"
+    channel:  "11"
+    txpower: "3"
+  - id: "{{ device_5g_radio }}"
+    channel:  "52"
+
+# wireless_interfaces_override:
+  # - ssid: "eduroam"
+  #   device: ""
+  # - ssid: "free wifi"
+  #   device: ""

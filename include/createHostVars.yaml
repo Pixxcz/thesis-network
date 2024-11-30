@@ -1,0 +1,25 @@
+- name: Zjistit subnet
+  set_fact:
+    ip_subnet: "{{ item.ip | regex_search('^(\\d+\\.\\d+\\.\\d+)') }}"
+- name: Přidělit IP adresu
+  set_fact:
+    ip_address: "{{ free_subnet_ips[ip_subnet] | first }}"
+
+- name: existuje config v host_vars?
+  stat:
+    path: host_vars/{{item.hostname}}.yml
+  register: st
+- name: Vytvoreni souboru v host_vars
+  template:
+    src: templates/host_vars.j2
+    dest: host_vars/{{item.hostname}}.yml
+  when: not st.stat.exists
+- name: Aktualizovat seznam volnych IP adres po prideleni
+  set_fact:
+    free_subnet_ips: "{{ free_subnet_ips | combine({ip_subnet: free_subnet_ips[ip_subnet][1:]}) }}"
+- name: Pridat blok s novym pristupovym bodem na konec souboru
+  lineinfile:
+    path: inventory.yml  # Cesta k souboru
+    line: |2
+          {{ item.hostname }}:
+            ansible_host: "{{ ip_address }}"

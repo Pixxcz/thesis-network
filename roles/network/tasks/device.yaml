@@ -1,0 +1,18 @@
+...
+
+- name: Vytvoreni a konfigurace sitoveho zarizeni
+  when: "'present' in network_device_state"
+  uci:
+    command: "section"
+    config: "network"
+    type: "device"
+    find:
+      name: "{{ item.name | default(omit) }}"
+    value:
+      type: "{{ item.type | default(omit) }}"
+      ports: "{{ item.ports | default([]) | join(' ') }}"
+      stp: "{{ item.stp | default(omit) }}"
+      vlan: "{{ item.vlan | default(omit) }}"
+      igmp_snooping: "{{ item.igmp_snooping | default(omit) }}"
+      ipv6: "{{ item.ipv6 | default(omit) }}"
+    replace: "yes"

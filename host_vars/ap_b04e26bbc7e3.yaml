@@ -1,0 +1,30 @@
+device_ip_address: "10.11.99.3"
+device_hostname: "ap-predsin"
+
+network_swconfig:
+  - vlan: "129"
+    ports: "0t 1t"
+    description: "hoste_wifi"
+  - vlan: "137"
+    ports: "0t 1t"
+    description: "studenti_wifi"
+  - vlan: "145"
+    ports: "0t 1t"
+    description: "ucitele_wifi"
+  - vlan: "152"
+    ports: "0t 1t"
+    description: "free_wifi"
+
+wireless_devices:
+  - id: "{{ device_2g_radio }}"
+    channel:  "6"
+    txpower: "5"
+  - id: "{{ device_5g_radio }}"
+    channel:  "42"
+    txpower: "8"
+
+#wireless_interfaces_override:
+  # - ssid: "eduroam"
+  #   device: "{{ [device_2g_radio] }}"
+   - ssid: "free wifi"
+     device: "{{ [device_2g_radio] }}"

@@ -1,0 +1,15 @@
+device_ip_address: "10.11.99.4"
+device_hostname: "ap-outdoor"
+
+wireless_devices:
+  - id: "{{ device_2g_radio }}"
+    channel:  "1"
+    txpower: "3"
+
+# wireless_interfaces_override:
+  # - ssid: "aurora"
+  #   device: ""
+  # - ssid: "aurora - free"
+  #   device: ""
+  # - ssid: "Aurora"
+  #   device: ""

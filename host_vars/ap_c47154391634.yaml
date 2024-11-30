@@ -1,0 +1,38 @@
+device_ip_address: "10.11.99.6"
+device_hostname: "ap-vila-dole"
+
+network_swconfig:
+  - vlan: "128"
+    ports: "0t 6t 1 2 3 4"
+    description: "hoste"
+  - vlan: "129"
+    ports: "0t 6t"
+    description: "hoste_wifi"
+  - vlan: "136"
+    ports: "0t 6t"
+    description: "studenti_lan"
+  - vlan: "137"
+    ports: "0t 6t"
+    description: "studenti_wifi"
+  - vlan: "144"
+    ports: "0t 6t"
+    description: "ucitele_lan"
+  - vlan: "145"
+    ports: "0t 6t"
+    description: "ucitele_wifi"
+  - vlan: "152"
+    ports: "0t 6t"
+    description: "free_wifi"
+
+wireless_devices:
+  - id: "{{ device_2g_radio }}"
+    channel:  "13"
+    txpower: "5"
+
+# wireless_interfaces_override:
+  # - ssid: "aurora"
+  #   device: "{{ [device_2g_radio] }}"
+  # - ssid: "aurora - free"
+  #   device: "{{ [device_2g_radio] }}"
+  # - ssid: "Aurora"
+  #   device: "{{ [device_2g_radio] }}"

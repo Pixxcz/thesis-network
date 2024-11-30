@@ -1,0 +1,70 @@
+---
+- name: Nastaveni state pro interface {{ outerItem.ssid }}
+  ansible.builtin.set_fact:
+    wireless_interface_state: "{{ outerItem.state | default('present') }}"
+
+- name: Zarizeni pro pridani
+  when: "'present' in wireless_interface_state"
+  ansible.builtin.set_fact:
+    wireless_devices_add: "{{ (wireless_interfaces_override | default() | selectattr('ssid', 'equalto', outerItem.ssid) | map(attribute='device') | list | first) | default(outerItem.device) }}"
+- name: Zarizeni pro odebrani
+  when: "'present' in wireless_interface_state"
+  ansible.builtin.set_fact:
+    wireless_devices_del: "{{ ansible_facts.openwrt_wireless | list | difference(wireless_devices_add) | default([]) }}"
+
+- name: Odstraneni interface {{ outerItem.ssid }} na vsech radiich
+  when: "'absent' in wireless_interface_state"
+  uci:
+    command: "absent"
+    config: "wireless"
+    type: "wifi-iface"
+    find:
+      ssid: "{{ outerItem.ssid }}"
+
+- name: Odstraneni interface {{ outerItem.ssid }} na radiu {{ item }}
+  when: wireless_devices_del is defined and wireless_devices_del | length > 0
+  uci:
+    command: "absent"
+    config: "wireless"
+    type: "wifi-iface"
+    find:
+      ssid: "{{ outerItem.ssid }}"
+      device: "{{ item }}"
+  loop: "{{ wireless_devices_del }}"
+
+- name: Vytvoreni a konfigurace noveho interface
+  when: "'present' in wireless_interface_state and wireless_devices_add | length > 0"
+  uci:
+    command: "section"
+    config: "wireless"
+    type: "wifi-iface"
+    find:
+      device: "{{ item }}"
+      ssid: "{{ outerItem.ssid }}"
+    value:
+      ifname: "{{ outerItem.ifname ~ ansible_loop.index0 | default(omit) }}"
+      device: "{{ item | default(omit) }}"
+      network: "{{ outerItem.network | default([]) | join(' ') }}"
+      mode: "{{ outerItem.mode | default(omit) }}"
+      disabled: "{{ outerItem.disabled | default(omit) }}"
+      ssid: "{{ outerItem.ssid | default(omit) }}"
+      mesh_id: "{{ outerItem.mesh_id | default(omit) }}"
+      hidden: "{{ outerItem.hidden | default(omit) }}"
+      isolate: "{{ outerItem.isolate | default(omit) }}"
+      encryption: "{{ outerItem.encryption | default(omit) }}"
+      key: "{{ outerItem.key | default(omit) }}"
+      auth_server: "{{ outerItem.auth_server | default(omit) }}"
+      auth_secret: "{{ outerItem.auth_secret | default(omit) }}"
+      dynamic_vlan: "{{ outerItem.dynamic_vlan | default(omit) }}"
+      vlan_tagged_interface: "{{ outerItem.vlan_tagged_interface | default(omit) }}"
+      vlan_bridge: "{{ outerItem.vlan_bridge | default(omit) }}"
+      vlan_naming: "{{ outerItem.vlan_naming | default(omit) }}"
+      macfilter: "{{ outerItem.macfilter | default(omit) }}"
+      maclist: "{{ outerItem.maclist | default([]) | join(' ') }}"
+      ieee80211r: "{{ outerItem.ieee80211r | default(omit) }}"
+      mobility_domain: "{{ mobility_domain_identifier.stdout | default(omit) }}"
+      ft_over_ds: "{{ outerItem.ft_over_ds | default(omit) }}"
+      ft_psk_generate_local: "{{ outerItem.ft_psk_generate_local | default(omit) }}"
+  loop: "{{ wireless_devices_add }}"
+  loop_control:
+    extended: true

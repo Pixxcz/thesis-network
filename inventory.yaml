@@ -1,0 +1,20 @@
+openwrt:
+  children:
+    accessPoints:
+
+accessPoints:
+  vars:
+    ansible_scp_extra_args: "-O"
+  children:
+    dsa:
+      hosts:
+        ap_107c61992bd8:
+          ansible_host: "10.11.99.2"
+        ap_c47154393f26:
+          ansible_host: "10.22.99.2"
+    swconfig:
+      hosts:
+        ap_b04e26bbc7e3:
+          ansible_host: "10.11.99.3"
+        ap_0c806307e88a:
+          ansible_host: "10.11.99.4"

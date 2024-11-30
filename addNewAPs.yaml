@@ -1,0 +1,101 @@
+- name: Detekce zarizeni v siti
+  hosts: localhost
+  vars:
+    subnets: ["10.11.99", "10.22.99"]
+  gather_facts: no
+  tasks:
+    - name: Ziskani seznamu zarizeni v rozsahu DHCP serveru
+      ansible.builtin.shell: |
+        for i in $(seq 100 254); do
+          ping -W .1 -c 1 {{ item }}.$i > /dev/null 2>&1 && echo {{ item }}.$i;
+        done || true
+      register: new_ips
+      loop: "{{ subnets }}"
+    - name: Pridani aktivni IP do dynamickeho inventare
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: found_devices
+      loop: "{{ new_ips.results | map(attribute='stdout_lines') | flatten }}"
+    - name: Pridani skupiny found_devices do metaskupiny openwrt
+      ansible.builtin.add_host:
+        groups: openwrt
+        name: "{{ item }}"
+      loop: "{{ groups['found_devices'] }}"
+
+    - name: Ziskáni seznamu volnych adres mimo DHCP server
+      ansible.builtin.shell: |
+        for i in $(seq 1 99); do
+          ping -W .1 -c 1 {{ item }}.$i > /dev/null 2>&1 || echo {{ item }}.$i;
+        done
+      register: free_ips
+      loop: "{{ subnets }}"
+    - name: Vytvoreni seznamu volných IP adres podle subnetu
+      set_fact:
+        free_subnet_ips: "{{ free_subnet_ips | default({}) | combine({item.item: item.stdout_lines}) }}"
+      loop: "{{ free_ips.results }}"
+
+- name: Ziskani hostu a generovani hostnamu
+  hosts: found_devices
+  roles:
+    - gekmihesg.openwrt
+  gather_facts: yes
+  vars:
+    ansible_scp_extra_args: "-O"
+    openwrt_install_recommended_packages: false
+  tasks:
+    - name: Ziskani unikatniho nazvu zarizeni podle MAC adresy
+      set_fact:
+        hostname: "ap_{{ ansible_facts.openwrt_devices[ansible_facts.openwrt_interfaces.mgmnt.l3_device].macaddr.replace(':', '') }}"
+
+    - name: Ulozeni ip adresy hosta a hosnamu do seznamu hostu
+      set_fact:
+        host_info: { "ip": "{{ ansible_host }}", "hostname": "{{ hostname }}" }
+
+    - name: Shromazdeni informaci o vsech hostech a predani na localhost
+      delegate_to: localhost
+      delegate_facts: true
+      run_once: true
+      set_fact:
+        found_hosts_info: "{{ ansible_play_hosts | map('extract', hostvars, 'host_info') | list }}"
+
+- name: Pridani nového access poitu do spravy
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Prideleni staticke IP adresy a vytvoreni souboru v host_vars
+      include_tasks: include/createHostVars.yml
+      loop: "{{ found_hosts_info }}"
+    - meta: refresh_inventory
+    - name: Pridani nalezenych hostu do dynamickeho inventare
+      ansible.builtin.add_host:
+        name: '{{ item.hostname }}'
+        ansible_host: '{{ item.ip }}'
+        groups: new_devices
+      loop: "{{ found_hosts_info }}"
+    - name: Pridani skupiny new_devices do metaskupiny openwrt
+      ansible.builtin.add_host:
+        groups: openwrt
+        name: "{{ item }}"
+      loop: "{{ groups['new_devices'] }}"
+
+- name: Nastaveni staticke ip na mgmnt interface
+  hosts: new_devices
+  roles:
+  - gekmihesg.openwrt
+  - network
+  gather_facts: yes
+  vars:
+    ansible_scp_extra_args: "-O"
+    device_bridge_port: "{{ ansible_facts.openwrt_interfaces.mgmnt.device | regex_search('eth[0-9]+|wan') }}"
+    network_interfaces:
+    - id: "mgmnt"
+      proto: "static"
+      device: "{{ device_bridge_port }}.99"
+      ipaddr: "{{ device_ip_address }}/24"
+      gateway: "{{ device_ip_address | regex_replace('\\.[0-9]+$', '.1') }}"
+      dns: ["{{ device_ip_address | regex_replace('\\.[0-9]+$', '.1') }}"]
+  pre_tasks:
+  - name: update time
+    command:
+      cmd: ntpd -dnq -p pool.ntp.org
+    changed_when: false

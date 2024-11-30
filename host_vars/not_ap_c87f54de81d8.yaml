@@ -1,0 +1,33 @@
+device_ip_address: "10.22.99.2"
+device_hostname: "ap-frystak"
+
+wireless_devices:
+  - id: "{{ device_2g_radio }}"
+    channel:  "1"
+
+network_devices:
+  - id: "@device[0]"
+    name: "br-vlan128"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}"]
+  - id: "@device[1]"
+    name: "br-vlan136"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}.136"]
+  - id: "@device[2]"
+    name: "br-vlan144"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}.144"]
+  - id: "@device[3]"
+    name: "br-free"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}.152"]
+  - id: "@device[4]"
+    name: "br-oldaurora"
+    state: "present"
+    type: "bridge"
+    ports: ["{{ device_bridge_port }}"]

@@ -1,0 +1,34 @@
+---
+- name: Nastaveni swconfig vlan
+  ansible.builtin.include_tasks: swconfig.yml
+  when: network_swconfig is defined
+  loop: "{{ network_swconfig | default([]) }}"
+
+- name: Nastaveni sitovych zarizeni
+  ansible.builtin.include_tasks: device.yml
+  loop: "{{ network_devices | default([]) + network_devices_append | default([]) }}"
+
+- name: Nastaveni dsa vlan filteringu
+  ansible.builtin.include_tasks: vlan_filtering.yml
+  when: network_bridge_vlan_filtering is defined
+  loop: "{{ network_bridge_vlan_filtering | default([]) }}"
+
+- name: Nastaveni sitovych rozhrani
+  ansible.builtin.include_tasks: interface.yml
+  loop: "{{ network_interfaces | default([]) }}"
+
+- name: Aplikovani zmen
+  uci:
+    command: commit
+
+- name: Reload network
+  nohup:
+    command: /etc/init.d/network restart
+
+- name: Aktualizace IP adresy v inventory
+  set_fact:
+    ansible_host: "{{ device_ip_address }}"
+  when: device_ip_address is defined
+- name: Čekání na dostupnost zařízení
+  ansible.builtin.wait_for_connection:
+    timeout: 30

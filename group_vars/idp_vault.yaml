@@ -1,0 +1,5 @@
+semik_dev_cesnet_cz:
+  ermon_secret: asd
+  ldap_passwd: qwe
+  radsec_key_password: zxc
+  eap_key_password: 123

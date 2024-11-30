@@ -1,0 +1,73 @@
+- name: load variables
+  hosts: eduroam
+  tasks:
+    - include_vars: group_vars/idp_vault.yml
+
+- name: install freeradius
+  hosts: eduroam
+  roles:
+    - freeradius
+
+  post_tasks:
+    - name: Pridani VLAN pro lokální identity podle skupiny
+      ansible.builtin.blockinfile:
+        path: "{{ etc_freeradius }}/sites-enabled/inner-tunnel"
+        block: |4
+                    #Dynamic VLAN assignment based on LDAP group membership
+                    #check if eduroam user`s realm is the same as "home realm" - to prevent useless checking LDAP pro non-existing realms
+                    if(&User-Name =~ /@realm\.cz$/i){
+                        if (&LDAP-Group == "CN=teacher,OU=Teacher,DC=realm,DC=cz") {
+                      update reply {
+                                      &Tunnel-Medium-Type := "IEEE-802"
+                                      &Tunnel-Type := "VLAN"
+                                      &Tunnel-Private-Group-Id := "145"
+                                          }
+                      }
+                      elsif (&LDAP-Group == "cn=student,ou=Student,dc=realm,dc=cz") {
+                      update reply {
+                              &Tunnel-Medium-Type := "IEEE-802"
+                              &Tunnel-Type := "VLAN"
+                              &Tunnel-Private-Group-Id := "137"
+                                  }
+                      }
+                      elsif (&LDAP-Group == "CN=eduroam.cesnet,CN=Users,DC=realm,DC=cz") {
+                      update reply {
+                              &Tunnel-Medium-Type := "IEEE-802"
+                              &Tunnel-Type := "VLAN"
+                              &Tunnel-Private-Group-Id := "666"
+                                    }
+                      }
+                      #when user is not member of any security group, allow only basic access
+                      else {
+                      update reply {
+                              &Tunnel-Medium-Type := "IEEE-802"
+                              &Tunnel-Type := "VLAN"
+                              &Tunnel-Private-Group-Id := "129"
+                                  }
+                      }
+                    }
+        insertafter: 'post-auth {'
+    - name: Pridani VLAN pro cizi identity
+      ansible.builtin.blockinfile:
+        path: "{{ etc_freeradius }}/sites-enabled/default"
+        block: |4
+                    if ("%{proxy-reply:Packet-Type}" == "Access-Accept") {
+                      update proxy-reply {
+                        Tunnel-Type := VLAN
+                        Tunnel-Medium-Type := IEEE-802
+                        Tunnel-Private-Group-Id := 129
+                      }
+                    }
+        insertafter: 'attr_filter.post-proxy'
+        
+    - name: Filtrování odchozich atributu
+      ansible.builtin.replace:
+        path: "{{ etc_freeradius }}/sites-enabled/default"
+        regexp: '^#\s*(attr_filter.post-proxy)'
+        replace: '        \1'
+    - name: Nastavit use_tunneled_reply v části peap
+      ansible.builtin.replace:
+        path: "{{ etc_freeradius }}/mods-enabled/eap"
+        regexp: '^\s*use_tunneled_reply\s*=.*'
+        replace: '		use_tunneled_reply = yes'
+      notify: restart freeradius

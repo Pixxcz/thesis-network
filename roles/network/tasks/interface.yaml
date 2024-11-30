@@ -1,0 +1,34 @@
+...
+
+- name: Vytvoreni a konfigurace sitoveho rozhrani
+  when: "'present' in network_interface_state"
+  block:
+    - name: Vytvoreni sitoveho rozhrani {{ item.id }}
+      uci:
+        command: "add"
+        config: "network"
+        section: "{{ item.id }}"
+        type: "interface"
+
+    - name: Konfigurace sitoveho rozhrani {{ item.id }}
+      uci:
+        command: "set"
+        config: "network"
+        section: "{{ item.id }}"
+        type: "interface"
+        value:
+          device: "{{ item.device | default(omit) }}"
+          proto: "{{ item.proto | default(omit) }}"
+          auto: "{{ item.auto | default(omit) }}"
+          force_link: "{{ item.force_link | default(omit) }}"
+          ipaddr: "{{ item.ipaddr | default(omit) }}"
+          netmask: "{{ item.netmask | default(omit) }}"
+          gateway: "{{ item.gateway | default(omit) }}"
+          peerdns: "{{ item.peerdns | default(omit) }}"
+          dns: "{{ item.dns | default([]) | join(' ') }}"
+          username: "{{ item.username | default(omit) }}"
+          password: "{{ item.password | default(omit) }}"
+          mtu: "{{ item.mtu | default(omit) }}"
+          ipv6: "{{ item.ipv6 | default(omit) }}"
+          delegate: "{{ item.delegate | default(omit) }}"
+          ip6assign: "{{ item.ip6assign | default(omit) }}"

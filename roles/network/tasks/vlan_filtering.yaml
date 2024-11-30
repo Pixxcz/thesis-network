@@ -1,0 +1,14 @@
+...
+
+- name: Vytvoreni a konfigurace dsa vlany
+  when: "'present' in switch_vlan_state"
+  uci:
+    command: "section"
+    config: "network"
+    type: "bridge-vlan"
+    find:
+      vlan: "{{ item.vlan | mandatory }}"
+    value:
+      device: "{{ item.device | mandatory }}"
+      ports: "{{ item.ports | default([]) }}"
+    replace: "yes"

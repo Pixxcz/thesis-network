@@ -1,0 +1,38 @@
+- hosts: accessPoints
+  ignore_unreachable: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: update time
+      command:
+        cmd: ntpd -dnq -p pool.ntp.org
+      changed_when: false
+
+  roles:
+    - system
+    - network
+    - wireless
+
+  post_tasks:
+    - name: Install prometheus-node-exporter-lua
+      opkg:
+        name: prometheus-node-exporter-lua
+        state: present
+    - name: Install prometheus-node-exporter-lua-hostapd_stations
+      opkg:
+        name: prometheus-node-exporter-lua-hostapd_stations
+        state: present
+    - name: Configure prometheus-node-exporter-lua
+      uci:
+        command: section
+        config: prometheus-node-exporter-lua
+        type: prometheus-node-exporter-lua
+        name: main
+        value:
+          listen_interface: mgmnt
+          listen_port: 9100
+        autocommit: true
+    - name: Reboot devices
+      ansible.builtin.command:
+        cmd: "reboot"
+      changed_when: false

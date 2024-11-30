@@ -1,0 +1,32 @@
+---
+- name: Konfigurace systému
+  uci:
+    command: "set"
+    config: "system"
+    section: "@system[0]"
+    type: "system"
+    value:
+      hostname: "{{ system.hostname | default(omit) }}"
+      description: "{{ system.description | default(omit) }}"
+      notes: "{{ system.notes | default(omit) }}"
+      klogconloglevel: "{{ system.klogconloglevel | default(omit) }}"
+      log_file: "{{ system.log_file | default(omit) }}"
+      log_hostname: "{{ system.log_hostname | default(omit) }}"
+      log_ip: "{{ system.log_ip | default(omit) }}"
+      log_port: "{{ system.log_port | default(omit) }}"
+      log_proto: "{{ system.log_proto | default(omit) }}"
+      log_remote: "{{ system.log_remote | default(omit) }}"
+      log_size: "{{ system.log_size | default(omit) }}"
+      log_type: "{{ system.log_type | default(omit) }}"
+      timezone: "{{ system.timezone | default(omit) }}"
+      zonename: "{{ system.zonename | default(omit) }}"
+
+- name: Commit a reload
+  block:
+    - name: Commit
+      uci:
+        command: commit
+      notify: Reload system
+
+    - name: Reload system service
+      ansible.builtin.meta: flush_handlers

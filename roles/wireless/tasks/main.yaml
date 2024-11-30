@@ -1,0 +1,15 @@
+---
+- name: Konfigurace wifi zarizeni
+  ansible.builtin.include_tasks: device.yml
+  loop: "{{ ansible_facts.openwrt_wireless | list }}"
+
+- name: Konfigurace wifi rozhrani
+  ansible.builtin.include_tasks: interface.yml
+  loop: "{{ wireless_interfaces | default([]) }}"
+  loop_control:
+    loop_var: outerItem
+
+- name: Aplikovani zmen a restart wifi
+  uci:
+    command: commit
+  notify: Reload wireless

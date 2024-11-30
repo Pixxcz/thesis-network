@@ -1,0 +1,15 @@
+---
+- name: Nastavení radia {{ item }}
+  uci:
+    command: "section"
+    config: "wireless"
+    section: "{{ item }}"
+    type: "wifi-device"
+    value:
+      type: "{{ (wireless_devices | selectattr('id', 'equalto', item) | map(attribute='type') | first | default(omit)) }}"
+      disabled: "{{ (wireless_devices | selectattr('id', 'equalto', item) | map(attribute='disabled') | first | default(wireless_devices_default.disabled | default(omit))) }}"
+      channel: "{{ (wireless_devices | selectattr('id', 'equalto', item) | map(attribute='channel') | first | default(omit)) }}"
+      band: "{{ (wireless_devices | selectattr('id', 'equalto', item) | map(attribute='band') | first | default(omit)) }}"
+      htmode: "{{ (wireless_devices | selectattr('id', 'equalto', item) | map(attribute='htmode') | first | default(omit)) }}"
+      country: "{{ (wireless_devices | selectattr('id', 'equalto', item) | map(attribute='country') | first | default(wireless_devices_default.country | default(omit))) }}"
+      txpower: "{{ (wireless_devices | selectattr('id', 'equalto', item) | map(attribute='txpower') | first | default(omit)) }}"
